@@ -6,6 +6,8 @@ require 'json'
 require 'benchmark'
 require 'pp'
 require 'pry'
+require 'optionparser'
+require 'set'
 
 STOP_WORDS = [ # ripped off from https://github.com/brez/stopwords/blob/master/lib/stopwords.rb
   'a','cannot','into','our','thus','about','co','is','ours','to','above',
@@ -52,6 +54,8 @@ def whitelisted_word? word
                    else
                      generate_whitelist
                    end
+
+                   @whitelist = Set.new @whitelist
                  end
 
 end
@@ -149,7 +153,7 @@ end
 
 rt = Benchmark.realtime do
   whitelisted_word? "foo"
-  all_files = Dir.glob("gutenberg_sample/**/*.zip")
+  all_files = Dir.glob(File.join("gutenberg_data", "**/*.zip"))
   files_by_dir = all_files.group_by { |f| f.gsub(/(.*)\/[^\/]*/, "\\1") }
   puts "#{files_by_dir.keys.length} directories detected"
   files_by_dir.each_key.sort.each do |dir|
