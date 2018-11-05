@@ -47,28 +47,26 @@ class Aggregator
     end
     progress.finish
 
-
     dir = "results_aggregate"
     FileUtils.mkdir_p dir
-    puts "Completed in #{rt}s"
-    puts "Writing File"
-    results.each_value(&:sort!)
-    rt = Benchmark.realtime do
-      json = JSON.generate(results)
-      File.open(File.join(dir, "db.json"), "wb") do |f|
-        f.write(json)
-      end
-    end
 
+    # puts "Completed in #{rt}s"
+    # puts "Writing File"
+    # results.each_value(&:sort!)
+    # rt = Benchmark.realtime do
+    #   json = JSON.generate(results)
+    #   File.open(File.join(dir, "db.json"), "wb") do |f|
+    #     f.write(json)
+    #   end
+    # end
 
     puts "Writing Word list"
     rt = Benchmark.realtime do
       File.open(File.join(dir, "words.txt"), "wb") do |f|
-        f.write(results.keys.join("\n"))
+        f.write(results.keys.sort.join("\n"))
       end
     end
     puts "Completed in #{rt}s"
-
 
     puts "Writing Letter Lists"
     rt = Benchmark.realtime do
@@ -103,4 +101,4 @@ OptionParser.new do |opts|
 end.parse!
 
 
-aggregator.parse!
+aggregator.aggregate!

@@ -41,7 +41,7 @@ STOP_WORDS = [ # ripped off from https://github.com/brez/stopwords/blob/master/l
   'throughout','yourself','can','indeed','otherwise','thru','yourselves'
 ].map(&:stem)
 
-BLANK_LINE_REGEXP = /[\n\r]{2,}/
+BLANK_LINE_REGEXP = /^$/
 START_REGEXP = /^\*+\s*START[^$]*PROJECT GUTENBERG[^\*]*\*{3,}\s*$/im
 INITIAL_CHOMP_REGEXP = /\*{3,}[^*]*\*{3,}\s*/
 END_REGEXP = /^\*+\s*END[^$]*PROJECT GUTENBERG/im
@@ -98,12 +98,12 @@ class Parser
     aggregator_hash = Hash.new { |h, k| h[k] = 0 }
 
     text.split(BLANK_LINE_REGEXP).map do |paragraph|
-      words = paragraph.split.each_with_object(aggregator_hash.dup) do |word, memo|
+      words = paragraph.gsub(/[\s]+/, ' ').split.each_with_object(aggregator_hash.dup) do |word, memo|
         sanitary_word = word.gsub(PUNCTUATION_REGEXP, '').downcase.stem
         memo[sanitary_word] += 1 if whitelisted_word?(sanitary_word)
       end
       if words.length >= self.minimum_words
-        { text: paragraph, words: words }
+        { text: paragraph.gsub("\n", " ").gsub(/\s+/, ' ').gsub(/^\s+/, '').gsub(/\s$/, ''), words: words }
       end
     end.compact
   end
@@ -112,7 +112,7 @@ class Parser
     destination_dir = File.join(results_dir, dir)
     FileUtils.mkdir_p destination_dir
     id = File.split(dir).last
-    json = JSON.generate({ id: id, paragraphs: result })
+    json = JSON.pretty_generate({ id: id, paragraphs: result })
     File.open(File.join(destination_dir, "#{id}.json"), "wb") do |f|
       f.write(json)
     end
@@ -151,7 +151,11 @@ class Parser
           return false
         end
 
-        file_data = file_data[start_index..end_index].gsub(INITIAL_CHOMP_REGEXP, '').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?')
+        file_data = file_data[start_index..end_index]
+                      .encode('UTF-8', invalid: :replace, undef: :replace, replace: '?')
+                      .gsub("\r", '')
+                      .gsub(INITIAL_CHOMP_REGEXP, '')
+                      .gsub(/^\s*$/,'')
         if file_data.length > 0
           write_result dir, results_dir, paragraphs(file_data)
         else
